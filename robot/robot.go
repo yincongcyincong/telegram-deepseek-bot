@@ -92,7 +92,6 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 		if msg.MsgId == 0 {
 			tgMsgInfo := tgbotapi.NewMessage(chatId, msg.Content)
 			tgMsgInfo.ReplyToMessageID = msgId
-			tgMsgInfo.ParseMode = tgbotapi.ModeMarkdown
 			sendInfo, err := bot.Send(tgMsgInfo)
 			if err != nil {
 				if sleepUtilNoLimit(msgId, err) {
@@ -112,8 +111,7 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 					ChatID:    chatId,
 					MessageID: msg.MsgId,
 				},
-				Text:      msg.Content,
-				ParseMode: tgbotapi.ModeMarkdown,
+				Text: msg.Content,
 			}
 			_, err := bot.Send(updateMsg)
 
@@ -129,7 +127,22 @@ func handleUpdate(messageChan chan *param.MsgInfo, update tgbotapi.Update, bot *
 				}
 			}
 		}
+	}
 
+	// Render last full message with markdown
+	if msg != nil && msg.MsgId != 0 {
+		finalUpdateMsg := tgbotapi.EditMessageTextConfig{
+			BaseEdit: tgbotapi.BaseEdit{
+				ChatID:    chatId,
+				MessageID: msg.MsgId,
+			},
+			Text:      msg.FullContent,       // FullContent
+			ParseMode: tgbotapi.ModeMarkdown, // Parse with Markdown
+		}
+		_, err := bot.Send(finalUpdateMsg)
+		if err != nil {
+			log.Printf("Error sending final markdown message:%d %s\n", msgId, err)
+		}
 	}
 
 	// store question and answer into record.
